@@ -1,0 +1,10 @@
+[package]
+name = "zellij-vertical-sessions"
+version = "0.1.0"
+edition = "2024"
+description = "A vertical session sidebar plugin for zellij"
+license = "MIT"
+
+[dependencies]
+zellij-tile = { git = "https://github.com/zellij-org/zellij", rev = "master" }
+unicode-width = "0.2"

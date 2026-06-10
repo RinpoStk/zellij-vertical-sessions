@@ -1,0 +1,36 @@
+// Vertical session sidebar on the LEFT side
+// Usage: zellij --layout vertical-sessions-left.kdl
+
+keybinds {
+    shared {
+        // Toggle selectability (for resizing the pane)
+        bind "Alt s" {
+            MessagePlugin "file:~/.config/zellij/plugins/zellij-vertical-sessions.wasm" {
+                name "toggle_selectable"
+            }
+        }
+    }
+}
+
+layout {
+    pane size=1 borderless=true {
+        plugin location="zellij:tab-bar"
+    }
+    pane split_direction="vertical" {
+        pane size=18 borderless=true {
+            plugin location="file:~/.config/zellij/plugins/zellij-vertical-sessions.wasm" {
+                format "#[fg=muted]{index} #[fg=none]{name}"
+                format_active "#[fg=accent]▶ {index} {name} #[fg=success]{indicators}"
+                format_resurrectable "#[fg=dim]{index} {name} ✝"
+                indicator_active "●"
+                indicator_clients " ({n})"
+                max_name_length 14
+                border "#[fg=dim]│"
+            }
+        }
+        pane
+    }
+    pane size=1 borderless=true {
+        plugin location="zellij:status-bar"
+    }
+}

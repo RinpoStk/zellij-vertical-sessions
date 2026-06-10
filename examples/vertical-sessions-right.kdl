@@ -1,0 +1,25 @@
+// Vertical session sidebar on the RIGHT side
+// Usage: zellij --layout vertical-sessions-right.kdl
+
+layout {
+    pane size=1 borderless=true {
+        plugin location="zellij:tab-bar"
+    }
+    pane split_direction="vertical" {
+        pane
+        pane size=20 borderless=true {
+            plugin location="file:~/.config/zellij/plugins/zellij-vertical-sessions.wasm" {
+                format "{index}:{name}"
+                format_active "#[fg=green]{index}:{name}{indicators}"
+                format_resurrectable "#[fg=dim]{index}:{name} (dead)"
+                indicator_active " *"
+                indicator_clients " [{n}]"
+                max_name_length 15
+                border "#[fg=dim]│"
+            }
+        }
+    }
+    pane size=1 borderless=true {
+        plugin location="zellij:status-bar"
+    }
+}

@@ -1,0 +1,22 @@
+// Minimal session sidebar (no status bar)
+// Usage: zellij --layout minimal.kdl
+
+layout {
+    pane size=1 borderless=true {
+        plugin location="zellij:tab-bar"
+    }
+    pane split_direction="vertical" {
+        pane size=15 borderless=true {
+            plugin location="file:~/.config/zellij/plugins/zellij-vertical-sessions.wasm" {
+                format "{name}"
+                format_active "#[fg=accent,bold]{name} *"
+                format_resurrectable "#[fg=dim]{name}"
+                indicator_active ""
+                indicator_clients ""
+                max_name_length 13
+                show_resurrectable "true"
+            }
+        }
+        pane
+    }
+}
