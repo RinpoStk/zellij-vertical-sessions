@@ -4,6 +4,10 @@
 
 A lightweight Zellij plugin that displays sessions in a vertical sidebar, inspired by [Vertical Tab Bar for Zellij](https://github.com/cfal/zellij-vertical-tabs).
 
+## Notice
+
+This project was generated entirely by AI. Please audit it yourself 😁.
+
 ## Permission File (Required)
 
 Before starting the plugin, add its permissions to Zellij's `permissions.kdl` file.

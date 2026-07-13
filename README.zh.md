@@ -4,6 +4,10 @@
 
 一个轻量的 Zellij 插件，在侧边栏中垂直显示会话列表，参考[Vertical Tab Bar for Zellij](https://github.com/cfal/zellij-vertical-tabs)。
 
+## 注意
+
+本项目完全使用AI生成，请自行审计😁。
+
 ## 权限文件（必需）
 
 启动插件前，需要先在 Zellij 的 `permissions.kdl` 中写入授权。
