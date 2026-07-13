@@ -1,6 +1,26 @@
 // Minimal session sidebar (no status bar)
 // Usage: zellij --layout minimal.kdl
 
+keybinds {
+    session {
+        bind "Up" {
+            MessagePlugin {
+                name "zellij_vertical_sessions_select_previous"
+            }
+        }
+        bind "Down" {
+            MessagePlugin {
+                name "zellij_vertical_sessions_select_next"
+            }
+        }
+        bind "Enter" {
+            MessagePlugin {
+                name "zellij_vertical_sessions_confirm_selection"
+            }
+        }
+    }
+}
+
 layout {
     pane size=1 borderless=true {
         plugin location="zellij:tab-bar"
@@ -10,6 +30,7 @@ layout {
             plugin location="file:~/.config/zellij/plugins/zellij-vertical-sessions.wasm" {
                 format "{name}"
                 format_active "#[fg=accent,bold]{name} *"
+                format_selected "#[fg=accent,bold]> {name}"
                 format_resurrectable "#[fg=dim]{name}"
                 indicator_active ""
                 indicator_clients ""

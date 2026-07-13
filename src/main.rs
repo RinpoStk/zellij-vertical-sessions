@@ -366,6 +366,7 @@ fn parse_styled_string(s: &str) -> StyledText {
 struct StyleConfig {
     format: String,
     format_active: String,
+    format_selected: String,
     format_resurrectable: String,
     overflow_above: String,
     overflow_below: String,
@@ -385,6 +386,7 @@ impl Default for StyleConfig {
         Self {
             format: "{index}:{name}".to_string(),
             format_active: "{index}:{name} {indicators}".to_string(),
+            format_selected: "#[fg=accent,bold]> {index}:{name} {indicators}".to_string(),
             format_resurrectable: "{index}:{name} (dead)".to_string(),
             overflow_above: "  ^ +{count}".to_string(),
             overflow_below: "  v +{count}".to_string(),
@@ -436,6 +438,7 @@ impl SessionEntry {
 struct State {
     sessions: Vec<SessionEntry>,
     active_session_idx: usize,
+    selected_session_idx: Option<usize>,
     mode_info: ModeInfo,
     style: StyleConfig,
     last_rows: usize,
@@ -453,6 +456,9 @@ impl ZellijPlugin for State {
         }
         if let Some(v) = configuration.get("format_active") {
             self.style.format_active = v.clone();
+        }
+        if let Some(v) = configuration.get("format_selected") {
+            self.style.format_selected = v.clone();
         }
         if let Some(v) = configuration.get("format_resurrectable") {
             self.style.format_resurrectable = v.clone();
@@ -559,12 +565,26 @@ impl ZellijPlugin for State {
         match event {
             Event::PermissionRequestResult(_) => {}
             Event::ModeUpdate(mode_info) => {
+                let was_in_session_mode = self.mode_info.mode == InputMode::Session;
+                let is_in_session_mode = mode_info.mode == InputMode::Session;
+
+                if !was_in_session_mode && is_in_session_mode {
+                    self.selected_session_idx = Some(self.active_session_idx);
+                } else if was_in_session_mode && !is_in_session_mode {
+                    self.selected_session_idx = None;
+                }
+
                 if self.mode_info != mode_info {
                     should_render = true;
                 }
                 self.mode_info = mode_info;
             }
             Event::SessionUpdate(session_infos, resurrectable_sessions) => {
+                let selected_session_name = self
+                    .selected_session_idx
+                    .and_then(|idx| self.sessions.get(idx))
+                    .map(|entry| entry.name().to_owned());
+
                 // Build unified session list
                 let mut entries: Vec<SessionEntry> =
                     session_infos.into_iter().map(SessionEntry::Live).collect();
@@ -579,6 +599,11 @@ impl ZellijPlugin for State {
 
                 self.active_session_idx = active_idx;
                 self.sessions = entries;
+                if self.mode_info.mode == InputMode::Session {
+                    self.selected_session_idx = selected_session_name
+                        .and_then(|name| self.sessions.iter().position(|e| e.name() == name))
+                        .or(Some(self.active_session_idx));
+                }
                 should_render = true;
             }
             Event::Mouse(me) => match me {
@@ -631,6 +656,18 @@ impl ZellijPlugin for State {
                 set_selectable(self.is_selectable);
                 false
             }
+            "select_previous_session" | "zellij_vertical_sessions_select_previous" => {
+                self.select_previous_session();
+                true
+            }
+            "select_next_session" | "zellij_vertical_sessions_select_next" => {
+                self.select_next_session();
+                true
+            }
+            "confirm_session_selection" | "zellij_vertical_sessions_confirm_selection" => {
+                self.confirm_session_selection();
+                true
+            }
             _ => false,
         }
     }
@@ -647,6 +684,50 @@ impl ZellijPlugin for State {
 }
 
 impl State {
+    fn select_previous_session(&mut self) {
+        if self.mode_info.mode != InputMode::Session || self.sessions.is_empty() {
+            return;
+        }
+        let current = self
+            .selected_session_idx
+            .unwrap_or(self.active_session_idx)
+            .min(self.sessions.len() - 1);
+        self.selected_session_idx = Some(current.saturating_sub(1));
+    }
+
+    fn select_next_session(&mut self) {
+        if self.mode_info.mode != InputMode::Session || self.sessions.is_empty() {
+            return;
+        }
+        let current = self
+            .selected_session_idx
+            .unwrap_or(self.active_session_idx)
+            .min(self.sessions.len() - 1);
+        self.selected_session_idx = Some((current + 1).min(self.sessions.len() - 1));
+    }
+
+    fn confirm_session_selection(&mut self) {
+        if self.mode_info.mode != InputMode::Session {
+            return;
+        }
+
+        let selected_name = self
+            .selected_session_idx
+            .and_then(|idx| self.sessions.get(idx))
+            .map(|entry| entry.name().to_owned());
+        self.selected_session_idx = None;
+        switch_to_input_mode(&InputMode::Normal);
+
+        if let Some(selected_name) = selected_name
+            && self
+                .sessions
+                .get(self.active_session_idx)
+                .is_none_or(|active| active.name() != selected_name)
+        {
+            switch_session(Some(&selected_name));
+        }
+    }
+
     fn expand_overflow_format(&self, format: &str, count: usize) -> String {
         format.replace("{count}", &count.to_string())
     }
@@ -786,10 +867,10 @@ impl State {
         let available_rows = rows.saturating_sub(top_padding);
 
         let session_count = self.sessions.len();
-        let active_index = self.active_session_idx;
+        let focused_index = self.selected_session_idx.unwrap_or(self.active_session_idx);
 
         let (start_index, end_index, sessions_above, sessions_below) =
-            calculate_visible_range(session_count, available_rows, active_index);
+            calculate_visible_range(session_count, available_rows, focused_index);
 
         let mut lines: Vec<String> = Vec::with_capacity(rows);
 
@@ -810,7 +891,10 @@ impl State {
         for i in start_index..end_index {
             if let Some(entry) = self.sessions.get(i).cloned() {
                 let is_current = entry.is_current();
-                let format = if is_current {
+                let is_selected = self.selected_session_idx == Some(i);
+                let format = if is_selected {
+                    &self.style.format_selected
+                } else if is_current {
                     &self.style.format_active
                 } else if entry.is_resurrectable() {
                     &self.style.format_resurrectable
@@ -819,7 +903,7 @@ impl State {
                 };
 
                 let styled = self.expand_format(format, &entry, i + self.style.start_index);
-                lines.push(self.build_line(&styled, cols, is_current));
+                lines.push(self.build_line(&styled, cols, is_current || is_selected));
             }
         }
 
@@ -852,14 +936,14 @@ impl State {
         }
 
         let session_count = self.sessions.len();
-        let active_index = self.active_session_idx;
+        let focused_index = self.selected_session_idx.unwrap_or(self.active_session_idx);
         let top_padding = self.style.padding_top.min(self.last_rows);
         if row < top_padding {
             return None;
         }
         let available_rows = self.last_rows.saturating_sub(top_padding);
         let (start_index, end_index, sessions_above, _) =
-            calculate_visible_range(session_count, available_rows, active_index);
+            calculate_visible_range(session_count, available_rows, focused_index);
 
         let row = row - top_padding;
         let content_start_row = if sessions_above > 0 { 1 } else { 0 };

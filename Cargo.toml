@@ -6,5 +6,5 @@ description = "A vertical session sidebar plugin for zellij"
 license = "MIT"
 
 [dependencies]
-zellij-tile = { git = "https://github.com/zellij-org/zellij", rev = "master" }
+zellij-tile = { git = "https://github.com/zellij-org/zellij", rev = "b6a5ad0e5a93d9f584b3f7a0fc90f497a09cbdb0" }
 unicode-width = "0.2"

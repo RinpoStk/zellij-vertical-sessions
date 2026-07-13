@@ -2,10 +2,27 @@
 // Usage: zellij --layout vertical-sessions-left.kdl
 
 keybinds {
+    session {
+        bind "Up" {
+            MessagePlugin {
+                name "zellij_vertical_sessions_select_previous"
+            }
+        }
+        bind "Down" {
+            MessagePlugin {
+                name "zellij_vertical_sessions_select_next"
+            }
+        }
+        bind "Enter" {
+            MessagePlugin {
+                name "zellij_vertical_sessions_confirm_selection"
+            }
+        }
+    }
     shared {
         // Toggle selectability (for resizing the pane)
         bind "Alt s" {
-            MessagePlugin "file:~/.config/zellij/plugins/zellij-vertical-sessions.wasm" {
+            MessagePlugin {
                 name "toggle_selectable"
             }
         }
@@ -21,6 +38,7 @@ layout {
             plugin location="file:~/.config/zellij/plugins/zellij-vertical-sessions.wasm" {
                 format "#[fg=muted]{index} #[fg=none]{name}"
                 format_active "#[fg=accent]▶ {index} {name} #[fg=success]{indicators}"
+                format_selected "#[fg=accent,bold]> {index} {name} #[fg=success]{indicators}"
                 format_resurrectable "#[fg=dim]{index} {name} ✝"
                 indicator_active "●"
                 indicator_clients " ({n})"

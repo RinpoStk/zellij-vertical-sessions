@@ -1,6 +1,26 @@
 // Vertical session sidebar on the RIGHT side
 // Usage: zellij --layout vertical-sessions-right.kdl
 
+keybinds {
+    session {
+        bind "Up" {
+            MessagePlugin {
+                name "zellij_vertical_sessions_select_previous"
+            }
+        }
+        bind "Down" {
+            MessagePlugin {
+                name "zellij_vertical_sessions_select_next"
+            }
+        }
+        bind "Enter" {
+            MessagePlugin {
+                name "zellij_vertical_sessions_confirm_selection"
+            }
+        }
+    }
+}
+
 layout {
     pane size=1 borderless=true {
         plugin location="zellij:tab-bar"
@@ -11,6 +31,7 @@ layout {
             plugin location="file:~/.config/zellij/plugins/zellij-vertical-sessions.wasm" {
                 format "{index}:{name}"
                 format_active "#[fg=green]{index}:{name}{indicators}"
+                format_selected "#[fg=accent,bold]> {index}:{name}{indicators}"
                 format_resurrectable "#[fg=dim]{index}:{name} (dead)"
                 indicator_active " *"
                 indicator_clients " [{n}]"
